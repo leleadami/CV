@@ -1,0 +1,32 @@
+# Core
+torch>=2.1.0
+torchvision>=0.16.0
+numpy>=1.24.0
+opencv-python>=4.8.0
+scipy>=1.11.0
+matplotlib>=3.7.0
+
+# Pose estimation (2D)
+# Using ViTPose or MMPose — scegli uno:
+# pip install mmcv mmpose  (consigliato per GPU)
+# oppure ultralytics (YOLOv8-pose, più semplice)
+ultralytics>=8.0.0
+
+# COCO tools
+pycocotools>=2.0.7
+
+# Triangulation / 3D
+# (numpy + scipy coprono già tutto)
+
+# Bundle Adjustment
+# scipy.optimize.least_squares è sufficiente
+# oppure installa pyceres per BA avanzato:
+# pip install pyceres  (richiede compilazione)
+
+# Jupyter
+jupyter>=1.0.0
+ipykernel>=6.0.0
+
+# Utility
+tqdm>=4.65.0
+Pillow>=10.0.0

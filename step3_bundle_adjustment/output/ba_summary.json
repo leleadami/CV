@@ -1,0 +1,13 @@
+{
+  "noise_px": 2.0,
+  "perturb_rvec": 0.02,
+  "perturb_tvec_mm": 100.0,
+  "n_court_points": 196,
+  "n_observations": 826,
+  "ba_initial_rmse_px": 51.36953879017629,
+  "ba_final_rmse_px": 1.9943375282959719,
+  "ba_reduction_pct": 96.11766510802826,
+  "mpjpe_pre_ba_px": 45.84005185998958,
+  "mpjpe_post_ba_px": 25.134438217802813,
+  "mpjpe_reduction_pct": 45.16926312698869
+}
