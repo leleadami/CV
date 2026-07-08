@@ -16,6 +16,7 @@ Due esperimenti:
 Detection: multi-frame, aggrega Hough su N frame/cam → mediana per cam.
 Court points: intersezioni rette FIBA (corner, paint, T, mid-circle).
 """
+import os
 import sys
 from pathlib import Path
 import json
@@ -34,7 +35,10 @@ from court_detector import build_court_observations_multiframe, build_court_obse
 
 
 PROJECT = Path(__file__).resolve().parent.parent
-VIDEO_DIR = Path('/home/lele/Desktop/CV/HPE/material4project/video/hpe_01')
+# Cartella dei video originali: default data/video/hpe_01 nel progetto,
+# override con la variabile d'ambiente HPE_VIDEO_DIR.
+VIDEO_DIR = Path(os.environ.get('HPE_VIDEO_DIR',
+                                PROJECT / 'data' / 'video' / 'hpe_01'))
 OUT_DIR = Path(__file__).parent / 'output_real'
 OUT_DIR.mkdir(exist_ok=True)
 
@@ -265,18 +269,28 @@ def main():
           f'(A={mpjpe_A_post:.2f})  -> soluzione ben determinata')
 
     # ---- Plot: esperimento A (onesto) ----
-    fig, axes = plt.subplots(1, 2, figsize=(16, 7))
+    # ECDF sovrapposte invece di istogrammi affiancati: il miglioramento si
+    # legge come spostamento a sinistra della curva, e P50/P90 sono leggibili
+    # direttamente sull'asse y.
+    fig, ax = plt.subplots(figsize=(10, 6.5))
     triang_base = triangulate_all(cams_v2, obs_players, players)
-    for ax, mp, triang, title, col in [
-            (axes[0], mpjpe_v2, triang_base, 'v2 baseline', 'steelblue'),
-            (axes[1], mpjpe_A_post, triang_A, 'v2 + BA reale', 'green')]:
-        errs = [np.nanmean(np.array(pd['repro_errs_px']))
-                for fd in triang.values() for pd in fd.values()
-                if (~np.isnan(np.array(pd['repro_errs_px']))).any()]
-        ax.hist(errs, bins=20, color=col, edgecolor='black', alpha=0.75)
-        ax.axvline(mp, color='red', linestyle='--', linewidth=2, label=f'media = {mp:.2f} px')
-        ax.set_xlabel('Reprojection error (px)'); ax.set_ylabel('# scheletri')
-        ax.set_title(title); ax.legend(); ax.grid(alpha=0.3)
+    for mp, triang, title, col in [
+            (mpjpe_v2, triang_base, 'v2 baseline', 'steelblue'),
+            (mpjpe_A_post, triang_A, 'v2 + BA reale', 'green')]:
+        errs = np.sort([np.nanmean(np.array(pd['repro_errs_px']))
+                        for fd in triang.values() for pd in fd.values()
+                        if (~np.isnan(np.array(pd['repro_errs_px']))).any()])
+        ecdf = np.arange(1, errs.size + 1) / errs.size
+        p50, p90 = np.percentile(errs, [50, 90])
+        ax.plot(errs, ecdf, color=col, linewidth=2, drawstyle='steps-post',
+                label=f'{title} — media={mp:.2f}, P50={p50:.2f}, P90={p90:.2f} px')
+        ax.axvline(mp, color=col, linestyle='--', linewidth=1, alpha=0.6)
+    for q in (0.5, 0.9):
+        ax.axhline(q, color='gray', linestyle=':', linewidth=0.8, alpha=0.7)
+    ax.set_xlabel('Reprojection error medio per scheletro (px)')
+    ax.set_ylabel('Frazione scheletri con errore ≤ x (ECDF)')
+    ax.set_ylim(0, 1.02)
+    ax.legend(loc='lower right'); ax.grid(alpha=0.3)
     fig.suptitle(f'Task 3 — BA iterativo ({len(rounds)} round) su calib v2: '
                  f'court RMSE 1° round {rmse_A_init:.2f}->{rmse_A_final:.2f} px | '
                  f'MPJPE player {mpjpe_v2:.2f}->{mpjpe_A_post:.2f} px | '

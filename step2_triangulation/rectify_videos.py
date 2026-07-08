@@ -15,6 +15,7 @@ transformation to the GT"), la triangolazione applica `cv2.undistortPoints`
 direttamente ai keypoint 2D — matematicamente equivalente.
 Questo script serve come deliverable visivo (video con campo non più curvato).
 """
+import os
 import sys
 from pathlib import Path
 
@@ -23,7 +24,10 @@ from utils.rectified_videos import process_video
 
 
 PROJECT = Path(__file__).resolve().parent.parent
-VIDEO_IN_DIR = Path('/home/lele/Desktop/CV/HPE/material4project/video/hpe_01')
+# Cartella dei video originali: default data/video/hpe_01 nel progetto,
+# override con la variabile d'ambiente HPE_VIDEO_DIR.
+VIDEO_IN_DIR = Path(os.environ.get('HPE_VIDEO_DIR',
+                                   PROJECT / 'data' / 'video' / 'hpe_01'))
 OUT_DIR = PROJECT / 'data' / 'rectified_videos' / 'hpe_01'
 CALIB_VERSION = 'camera_config_v2'
 CAM_IDS = ('cam_1', 'cam_2', 'cam_3', 'cam_4', 'cam_5', 'cam_7')

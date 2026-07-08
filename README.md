@@ -128,7 +128,8 @@ project/
 ├── step2_triangulation/output/
 │   ├── results_3d.json                 # X_3d_mm + repro_errs_px + loo_errs_px + metrics (LOO, bone-CV)
 │   ├── repro_errors.png                # istogramma reprojection error PER CAMERA (6 subplot + mediana)
-│   └── skeletons_3d_frame1.png         # scheletri 3D triangolati + posizioni cam (vista 3D)
+│   ├── skeletons_3d_frame1.png         # scheletri 3D triangolati + posizioni cam (vista 3D)
+│   └── reproj_overlay_frame1.png       # scheletri 3D riproiettati sui frame reali (check qualitativo)
 │
 └── step3_bundle_adjustment/
     ├── output/                          # versione SINTETICA (baseline)
@@ -136,7 +137,7 @@ project/
     │   └── ba_comparison.png
     └── output_real/                     # versione REALE (deliverable)
         ├── ba_real_summary.json         # esperimenti A (onesto) + B (stabilità init)
-        ├── ba_real_comparison.png       # istogrammi MPJPE: v2 baseline vs v2+BA reale
+        ├── ba_real_comparison.png       # ECDF sovrapposte: v2 baseline vs v2+BA reale (media, P50, P90)
         └── debug/cam_*_court_detect.png # debug Hough: rosso=expected, verde=intersezioni, magenta=match
 ```
 

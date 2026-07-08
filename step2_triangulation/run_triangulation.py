@@ -15,6 +15,7 @@ import sys
 from pathlib import Path
 import json
 import numpy as np
+import cv2
 import matplotlib.pyplot as plt
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -28,6 +29,14 @@ from utils.court import fiba_court_points, COURT_COLORS
 PROJECT = Path(__file__).resolve().parent.parent
 OUT_DIR = Path(__file__).parent / 'output'
 OUT_DIR.mkdir(exist_ok=True)
+IMG_DIR = PROJECT / 'data' / 'images'
+
+
+def find_frame_image(cam_id, frame_idx):
+    """Trova l'immagine Roboflow di (cam, frame): out{C}_frame_{F:04d}_png.rf.*.png"""
+    n = cam_id.split('_')[1]
+    hits = sorted(IMG_DIR.glob(f'out{n}_frame_{frame_idx:04d}_png.rf.*.png'))
+    return hits[0] if hits else None
 
 
 def main():
@@ -196,7 +205,72 @@ def main():
     ax.view_init(elev=22, azim=-55)   # vista più alta riduce confusione XY-Z
     plt.tight_layout()
     plt.savefig(OUT_DIR / f'skeletons_3d_frame{frame_to_plot}.png', dpi=140)
+    plt.close(fig)
     print(f'Plot salvato: {OUT_DIR / f"skeletons_3d_frame{frame_to_plot}.png"}')
+
+    # 7. Overlay riproiezione: scheletri 3D riproiettati sui frame reali.
+    # Verifica qualitativa che il 3D sia nel posto giusto in immagine:
+    # x bianche = keypoint 2D annotati, colori = scheletro 3D riproiettato.
+    # project() include la distorsione, coerente con le immagini raw Roboflow.
+    fig_o, axes_o = plt.subplots(2, 3, figsize=(18, 9))
+    for ax_o, cid in zip(axes_o.ravel(), cam_order):
+        img_path = find_frame_image(cid, frame_to_plot)
+        if img_path is None:
+            ax_o.set_title(f'{cid} — immagine mancante'); ax_o.axis('off')
+            continue
+        # Roboflow salva JPEG con estensione .png: cv2 sniffa il contenuto
+        img = cv2.cvtColor(cv2.imread(str(img_path)), cv2.COLOR_BGR2RGB)
+        ax_o.imshow(img)
+        cam = cams[cid]
+        errs_cam = []
+        for i, player in enumerate(players):
+            if player not in results[frame_to_plot]:
+                continue
+            X = np.array(results[frame_to_plot][player]['X_3d_mm'])
+            valid = ~np.isnan(X[:, 0])
+            if not valid.any():
+                continue
+            proj = np.full((N_KPTS, 2), np.nan)
+            proj[valid] = cam.project(X[valid])
+            for a, b in SKELETON_EDGES:
+                if valid[a] and valid[b]:
+                    ax_o.plot([proj[a, 0], proj[b, 0]], [proj[a, 1], proj[b, 1]],
+                              c=colors[i], linewidth=1.2)
+            # Non tutti i player hanno 18 keypoint annotati in questa vista:
+            # distinguo i joint 3D CON riscontro 2D (pieni + x bianca) da quelli
+            # SENZA annotazione qui (cerchietti vuoti — nessun confronto possibile).
+            vis = np.zeros(N_KPTS, dtype=bool)
+            if cid in obs[frame_to_plot] and player in obs[frame_to_plot][cid]:
+                kpts = obs[frame_to_plot][cid][player]['kpts']
+                vis = kpts[:, 2] > 0
+            both = vis & valid
+            only3d = valid & ~vis
+            ax_o.scatter(proj[both, 0], proj[both, 1], s=8, c=[colors[i]], zorder=3)
+            ax_o.scatter(proj[only3d, 0], proj[only3d, 1], s=14, facecolors='none',
+                         edgecolors=[colors[i]], linewidths=0.8, zorder=3)
+            if vis.any():
+                # x bianca = annotato con 3D valido; x grigia = annotato ma
+                # joint non triangolato (niente proiezione da confrontare)
+                orphan = vis & ~valid
+                ax_o.scatter(kpts[both, 0], kpts[both, 1], s=16, marker='x',
+                             c='white', linewidths=0.9, zorder=4)
+                ax_o.scatter(kpts[orphan, 0], kpts[orphan, 1], s=16, marker='x',
+                             c='gray', linewidths=0.9, zorder=4)
+                if both.any():
+                    errs_cam.extend(
+                        np.linalg.norm(proj[both] - kpts[both, :2], axis=1))
+        h, w = img.shape[:2]
+        ax_o.set_xlim(0, w); ax_o.set_ylim(h, 0); ax_o.axis('off')
+        med = np.median(errs_cam) if errs_cam else float('nan')
+        ax_o.set_title(f'{cid} — err mediano {med:.1f} px', fontsize=10)
+    fig_o.suptitle(f'Riproiezione scheletri 3D sui frame reali — frame {frame_to_plot} '
+                   '(x bianca = annotato+3D, cerchio vuoto = 3D senza annotazione '
+                   'in questa vista, x grigia = annotato senza 3D)',
+                   fontsize=12, fontweight='bold')
+    plt.tight_layout()
+    plt.savefig(OUT_DIR / f'reproj_overlay_frame{frame_to_plot}.png', dpi=130)
+    plt.close(fig_o)
+    print(f'Plot salvato: {OUT_DIR / f"reproj_overlay_frame{frame_to_plot}.png"}')
 
 
 if __name__ == '__main__':

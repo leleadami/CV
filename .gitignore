@@ -1,0 +1,10 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Dataset locale (114 MB: immagini/calibrazioni fornite, non versionate)
+data/
+
+# Windows
+*Zone.Identifier
+Thumbs.db
