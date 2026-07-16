@@ -1,10 +1,40 @@
-# Python
+# ==========================================
+# File specifici del tuo progetto da ignorare
+# ==========================================
+
+# 1. Dati (I dataset sono troppo pesanti per Git e non vanno tracciati)
+dataset/
+
+# 2. File di configurazione di tool/AI locali (non servono agli altri sviluppatori)
+.claude/
+.wolf/
+
+# 3. Output generati dagli script (es. grafici di sanity check)
+*.png
+# Se vuoi ignorare SOLO quell'immagine specifica usa invece: sanity_check_cameras.png
+
+# (Opzionale) Se il PDF è un file compilato/esportato di continuo e non la documentazione ufficiale
+# *.pdf
+
+
+# ==========================================
+# File Python standard da ignorare
+# ==========================================
+
+# Cache di Python
 __pycache__/
 *.py[cod]
+*$py.class
 
-# Dataset locale (114 MB: immagini/calibrazioni fornite, non versionate)
-data/
+# Ambienti virtuali (nel caso tu li stia usando o li userai)
+venv/
+env/
+.venv/
 
-# Windows
-*Zone.Identifier
-Thumbs.db
+CLAUDE.md
+HPE.pptx.pdf
+relazione/
+/report_lncs
+/HPE
+/progetto_minimo
+/project
